@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS — iQOO On-Device AI Agent Interactive Simulator</title>
+    <title>NEXUS — iQOO On-Device AI Agent Live Microphone Simulator</title>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -479,7 +479,7 @@
             font-weight: 500;
         }
 
-        /* Safety Modal Overlay inside Phone */
+        /* Safety Modal Overlay */
         .phone-modal {
             position: absolute;
             inset: 0;
@@ -541,7 +541,7 @@
             cursor: pointer;
         }
 
-        /* MIDDLE: NEXUS Agent AI HUD & Live Execution Timeline */
+        /* MIDDLE: NEXUS Agent AI HUD */
         .hud-container {
             display: flex;
             flex-direction: column;
@@ -573,7 +573,7 @@
             gap: 8px;
         }
 
-        /* Pipeline Visualizer Steps */
+        /* Pipeline Visualizer */
         .pipeline-flow {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -610,15 +610,10 @@
             color: var(--text-dim);
         }
 
-        .flow-step.active .step-label {
-            color: var(--accent-cyan);
-        }
+        .flow-step.active .step-label { color: var(--accent-cyan); }
+        .flow-step.passed .step-label { color: var(--accent-emerald); }
 
-        .flow-step.passed .step-label {
-            color: var(--accent-emerald);
-        }
-
-        /* Voice Waveform Area */
+        /* Push-to-Talk Mic & Live Waveform */
         .voice-box {
             background: #0A0E17;
             border: 1px solid #1E293B;
@@ -627,19 +622,19 @@
             display: flex;
             align-items: center;
             gap: 16px;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
 
         .mic-btn {
-            width: 48px;
-            height: 48px;
+            width: 52px;
+            height: 52px;
             border-radius: 50%;
             background: linear-gradient(135deg, #00F0FF, #3B82F6);
             border: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 22px;
             color: #000;
             cursor: pointer;
             box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
@@ -648,14 +643,14 @@
         }
 
         .mic-btn.listening {
-            animation: pulse-mic 1s infinite alternate;
+            animation: pulse-mic 0.8s infinite alternate;
             background: #F43F5E;
-            box-shadow: 0 0 20px #F43F5E;
+            box-shadow: 0 0 25px #F43F5E;
         }
 
         @keyframes pulse-mic {
             from { transform: scale(1); }
-            to { transform: scale(1.15); }
+            to { transform: scale(1.18); }
         }
 
         .voice-text-area {
@@ -668,6 +663,9 @@
             color: var(--text-dim);
             font-family: 'Fira Code', monospace;
             margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .voice-text {
@@ -680,7 +678,7 @@
             display: flex;
             align-items: center;
             gap: 3px;
-            height: 24px;
+            height: 28px;
         }
 
         .wave-bar {
@@ -688,16 +686,46 @@
             height: 6px;
             background: #00F0FF;
             border-radius: 2px;
-            transition: height 0.1s;
+            transition: height 0.05s ease;
         }
 
-        .listening .wave-bar {
-            animation: waveAnim 0.5s infinite ease-in-out alternate;
+        /* Text Input Bar */
+        .custom-input-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
         }
 
-        @keyframes waveAnim {
-            0% { height: 4px; }
-            100% { height: 22px; }
+        .text-input {
+            flex: 1;
+            background: #06090E;
+            border: 1px solid #1E293B;
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: #FFF;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+        }
+
+        .text-input:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+        }
+
+        .send-btn {
+            background: #00F0FF;
+            color: #000;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .send-btn:hover {
+            box-shadow: 0 0 15px #00F0FF;
         }
 
         /* Live Terminal Logs */
@@ -709,7 +737,7 @@
             font-family: 'Fira Code', monospace;
             font-size: 12px;
             line-height: 1.6;
-            height: 340px;
+            height: 320px;
             overflow-y: auto;
         }
 
@@ -739,7 +767,7 @@
             flex: 1;
         }
 
-        /* RIGHT: Demo Controls & Telemetry */
+        /* RIGHT: Sidebar Controls & Telemetry */
         .sidebar {
             display: flex;
             flex-direction: column;
@@ -829,7 +857,7 @@
             <div class="phone-frame">
                 <div class="phone-punchhole"></div>
                 <div class="phone-status-bar">
-                    <span>23:45</span>
+                    <span id="clock-time">23:45</span>
                     <span>5G • 100% 🔋</span>
                 </div>
 
@@ -842,19 +870,19 @@
                     <!-- 1. Home Screen -->
                     <div class="app-view active" id="view-home">
                         <div class="home-grid">
-                            <div class="home-app-icon" onclick="triggerDemo('Open WhatsApp')">
+                            <div class="home-app-icon" onclick="processSpokenCommand('Open WhatsApp')">
                                 <div class="icon-box" style="background: #25D366; color:#FFF;">💬</div>
                                 <span class="home-app-label">WhatsApp</span>
                             </div>
-                            <div class="home-app-icon" onclick="triggerDemo('Open Gmail')">
+                            <div class="home-app-icon" onclick="processSpokenCommand('Open Gmail')">
                                 <div class="icon-box" style="background: #EA4335; color:#FFF;">✉️</div>
                                 <span class="home-app-label">Gmail</span>
                             </div>
-                            <div class="home-app-icon" onclick="triggerDemo('Open Chrome and search for Pune Metro')">
+                            <div class="home-app-icon" onclick="processSpokenCommand('Open Chrome and search for Pune Metro')">
                                 <div class="icon-box" style="background: #4285F4; color:#FFF;">🌐</div>
                                 <span class="home-app-label">Chrome</span>
                             </div>
-                            <div class="home-app-icon" onclick="triggerDemo('Settings')">
+                            <div class="home-app-icon" onclick="processSpokenCommand('Settings')">
                                 <div class="icon-box" style="background: #64748B; color:#FFF;">⚙️</div>
                                 <span class="home-app-label">Settings</span>
                             </div>
@@ -908,7 +936,7 @@
                                         <span class="wa-name">Hackathon Team NEXUS</span>
                                         <span class="wa-time">22:50</span>
                                     </div>
-                                    <span class="wa-msg">Prototype is looking awesome!</span>
+                                    <span class="wa-msg">On-device prototype is live!</span>
                                 </div>
                             </div>
                         </div>
@@ -976,7 +1004,7 @@
         <div class="hud-container">
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">⚡ NEXUS Execution Loop State</div>
+                    <div class="card-title">⚡ NEXUS Live Execution Loop</div>
                     <span style="font-size:12px; color:var(--text-dim); font-family:'Fira Code', monospace;" id="loop-latency">Latency: 28ms</span>
                 </div>
 
@@ -991,27 +1019,36 @@
                     <div class="flow-step" id="step-verify"><div class="step-label">7. Verify</div></div>
                 </div>
 
-                <!-- Push to Talk Mic & Speech -->
+                <!-- Push-to-Talk Mic with Real Web Speech & Live AudioContext Waveform -->
                 <div class="voice-box" id="voice-box">
-                    <button class="mic-btn" id="mic-btn" onclick="togglePushToTalk()">🎤</button>
+                    <button class="mic-btn" id="mic-btn" onclick="toggleMicrophone()" title="Click to Speak (Push-to-Talk)">🎤</button>
                     <div class="voice-text-area">
-                        <div class="voice-prompt-label">Push-to-Talk Command:</div>
-                        <div class="voice-text" id="voice-text">"Press Mic or click a Demo"</div>
+                        <div class="voice-prompt-label">
+                            <span id="mic-status-indicator" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10B981;"></span>
+                            <span id="mic-status-text">Click Mic to Speak Live (Push-to-Talk):</span>
+                        </div>
+                        <div class="voice-text" id="voice-text">"Say e.g. 'Open WhatsApp', 'Search Pune Metro', 'Open Gmail'..."</div>
                     </div>
                     <div class="waveform" id="waveform">
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
+                        <div class="wave-bar" id="wb-1"></div>
+                        <div class="wave-bar" id="wb-2"></div>
+                        <div class="wave-bar" id="wb-3"></div>
+                        <div class="wave-bar" id="wb-4"></div>
+                        <div class="wave-bar" id="wb-5"></div>
+                        <div class="wave-bar" id="wb-6"></div>
                     </div>
+                </div>
+
+                <!-- Custom Command Input Bar -->
+                <div class="custom-input-bar">
+                    <input type="text" class="text-input" id="custom-command-input" placeholder="Or type a custom voice command here (e.g. 'Open Chrome and search Pune Metro')..." onkeydown="if(event.key==='Enter') sendCustomCommand()">
+                    <button class="send-btn" onclick="sendCustomCommand()">Execute</button>
                 </div>
 
                 <!-- Live Terminal Log -->
                 <div class="terminal-box" id="terminal-log">
-                    <div class="log-entry"><span class="log-tag tag-done">INIT</span><span class="log-msg">NEXUS on-device core loaded (Snapdragon NPU Hexagon)</span></div>
-                    <div class="log-entry"><span class="log-tag tag-observe">READY</span><span class="log-msg">Android Accessibility driver connected (Zero-latency bridge)</span></div>
+                    <div class="log-entry"><span class="log-tag tag-done">INIT</span><span class="log-msg">NEXUS on-device core ready (Snapdragon NPU Hexagon)</span></div>
+                    <div class="log-entry"><span class="log-tag tag-observe">READY</span><span class="log-msg">Microphone listener initialized (SpeechRecognition + Web Audio API)</span></div>
                 </div>
             </div>
         </div>
@@ -1024,39 +1061,39 @@
                 </div>
                 <div class="demo-btn-list">
                     <button class="demo-btn btn-primary-demo" onclick="playAutoPresentation()">
-                        <span>▶ Auto-Play Video Demo</span>
+                        <span>▶ Auto-Play Full Video Demo</span>
                         <span>⚡</span>
                     </button>
-                    <button class="demo-btn" onclick="triggerDemo('Open WhatsApp')">
+                    <button class="demo-btn" onclick="processSpokenCommand('Open WhatsApp')">
                         <span>Demo 1: Open WhatsApp</span>
                         <span>💬</span>
                     </button>
-                    <button class="demo-btn" onclick="triggerDemo('Check unread messages')">
+                    <button class="demo-btn" onclick="processSpokenCommand('Check my unread messages')">
                         <span>Demo 2: Check Unread Messages</span>
                         <span>📩</span>
                     </button>
-                    <button class="demo-btn" onclick="triggerDemo('Open Chrome and search for Pune Metro')">
+                    <button class="demo-btn" onclick="processSpokenCommand('Open Chrome and search for Pune Metro')">
                         <span>Demo 3: Search Pune Metro</span>
                         <span>🌐</span>
                     </button>
-                    <button class="demo-btn" onclick="triggerDemo('What is currently on my screen?')">
+                    <button class="demo-btn" onclick="processSpokenCommand('What is currently on my screen?')">
                         <span>Demo 4: What is on screen?</span>
                         <span>👁️</span>
                     </button>
-                    <button class="demo-btn" onclick="triggerDemo('Open Gmail and show me my latest emails')">
+                    <button class="demo-btn" onclick="processSpokenCommand('Open Gmail and show me my latest emails')">
                         <span>Demo 5: Open Gmail</span>
                         <span>✉️</span>
                     </button>
-                    <button class="demo-btn" onclick="triggerDemo('Go back')">
+                    <button class="demo-btn" onclick="processSpokenCommand('Go back')">
                         <span>Demo 6: Go back</span>
                         <span>↩️</span>
                     </button>
-                    <button class="demo-btn" onclick="triggerDemo('Take a screenshot')">
+                    <button class="demo-btn" onclick="processSpokenCommand('Take a screenshot')">
                         <span>Demo 7: Screenshot</span>
                         <span>📸</span>
                     </button>
                     <button class="demo-btn" style="border-color:#F43F5E; color:#FB7185;" onclick="triggerSafetyDemo()">
-                        <span>Safety Test: Send Payment</span>
+                        <span>Safety Test: Send ₹500</span>
                         <span>🛡️</span>
                     </button>
                 </div>
@@ -1068,7 +1105,7 @@
                 </div>
                 <div class="telemetry-row">
                     <span class="telemetry-label">Inference Engine:</span>
-                    <span class="telemetry-val" style="color:#10B981;">Snapdragon NPU</span>
+                    <span class="telemetry-val" style="color:#10B981;">Snapdragon NPU (Hexagon)</span>
                 </div>
                 <div class="telemetry-row">
                     <span class="telemetry-label">Screen Tree Extraction:</span>
@@ -1083,8 +1120,8 @@
                     <span class="telemetry-val" style="color:#34D399;">0 KB (100% Local)</span>
                 </div>
                 <div class="telemetry-row">
-                    <span class="telemetry-label">Verification Mode:</span>
-                    <span class="telemetry-val">Closed-Loop UI State</span>
+                    <span class="telemetry-label">Safety Status:</span>
+                    <span class="telemetry-val" style="color:#FBBF24;">Active Guardrails</span>
                 </div>
             </div>
         </div>
@@ -1142,7 +1179,149 @@
             box.style.height = h + 'px';
             lbl.innerText = label;
             box.style.display = 'block';
-            setTimeout(() => { box.style.display = 'none'; }, 1500);
+            setTimeout(() => { box.style.display = 'none'; }, 1800);
+        }
+
+        let isListening = false;
+        let recognition = null;
+        let audioContext = null;
+        let analyser = null;
+        let micStream = null;
+        let animationFrameId = null;
+
+        // Initialize Real Browser Web Speech Recognition
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRec();
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+                isListening = true;
+                document.getElementById('mic-btn').classList.add('listening');
+                document.getElementById('voice-box').classList.add('listening');
+                document.getElementById('mic-status-indicator').style.background = '#F43F5E';
+                document.getElementById('mic-status-text').innerText = 'Listening to your microphone... (Speak now)';
+                document.getElementById('voice-text').innerText = 'Listening...';
+                setPipelineStage('hear');
+                log('HEAR', 'Microphone active — capturing audio stream');
+                startLiveWaveform();
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                const spoken = finalTranscript || interimTranscript;
+                if (spoken) {
+                    document.getElementById('voice-text').innerText = `"${spoken}"`;
+                }
+                if (finalTranscript) {
+                    stopMicrophone();
+                    processSpokenCommand(finalTranscript);
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.warn('Speech recognition error:', event.error);
+                stopMicrophone();
+                log('ERROR', `Microphone error: ${event.error}`);
+            };
+
+            recognition.onend = () => {
+                stopMicrophone();
+            };
+        }
+
+        async function startLiveWaveform() {
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+                if (!micStream) {
+                    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                }
+                const source = audioContext.createMediaStreamSource(micStream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 32;
+                source.connect(analyser);
+
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+                function renderWave() {
+                    if (!isListening) return;
+                    analyser.getByteFrequencyData(dataArray);
+                    for (let i = 1; i <= 6; i++) {
+                        const val = dataArray[i] || 10;
+                        const height = Math.max(4, Math.min(26, (val / 255) * 28));
+                        const wb = document.getElementById(`wb-${i}`);
+                        if (wb) wb.style.height = height + 'px';
+                    }
+                    animationFrameId = requestAnimationFrame(renderWave);
+                }
+                renderWave();
+            } catch (err) {
+                console.debug('Live waveform fallback:', err);
+            }
+        }
+
+        function stopLiveWaveform() {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            for (let i = 1; i <= 6; i++) {
+                const wb = document.getElementById(`wb-${i}`);
+                if (wb) wb.style.height = '6px';
+            }
+        }
+
+        function toggleMicrophone() {
+            if (isListening) {
+                stopMicrophone();
+            } else {
+                startMicrophone();
+            }
+        }
+
+        function startMicrophone() {
+            if (recognition) {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    console.debug('Recognition restart:', e);
+                }
+            } else {
+                alert('Speech recognition is not supported in this browser. Please use Chrome or type your command.');
+            }
+        }
+
+        function stopMicrophone() {
+            isListening = false;
+            document.getElementById('mic-btn').classList.remove('listening');
+            document.getElementById('voice-box').classList.remove('listening');
+            document.getElementById('mic-status-indicator').style.background = '#10B981';
+            document.getElementById('mic-status-text').innerText = 'Push-to-Talk Mic Ready:';
+            stopLiveWaveform();
+            if (recognition) {
+                try { recognition.stop(); } catch(e){}
+            }
+        }
+
+        function sendCustomCommand() {
+            const input = document.getElementById('custom-command-input');
+            const val = input.value.trim();
+            if (val) {
+                input.value = '';
+                processSpokenCommand(val);
+            }
         }
 
         let isSafetyResolving = false;
@@ -1153,85 +1332,105 @@
             if (safetyCallback) safetyCallback(approved);
         }
 
-        async function triggerDemo(command) {
+        async function processSpokenCommand(command) {
             const voiceText = document.getElementById('voice-text');
-            const micBtn = document.getElementById('mic-btn');
-            const voiceBox = document.getElementById('voice-box');
+            voiceText.innerText = `"${command}"`;
 
             // 1. HEAR
-            micBtn.classList.add('listening');
-            voiceBox.classList.add('listening');
-            voiceText.innerText = `"${command}"`;
             setPipelineStage('hear');
-            log('HEAR', `User spoke: "${command}" (Local STT transcribed in 18ms)`);
-
-            await new Promise(r => setTimeout(r, 600));
-            micBtn.classList.remove('listening');
-            voiceBox.classList.remove('listening');
+            log('HEAR', `Transcribed command: "${command}" (Snapdragon Whisper STT)`);
+            await new Promise(r => setTimeout(r, 450));
 
             // 2. UNDERSTAND
             setPipelineStage('understand');
-            log('PLAN', `Interpreting intent via Snapdragon NPU...`);
-            await new Promise(r => setTimeout(r, 400));
+            log('PLAN', `Parsing semantic intent via Snapdragon NPU...`);
+            await new Promise(r => setTimeout(r, 350));
 
             // 3. OBSERVE
             setPipelineStage('observe');
-            log('OBSERVE', `ScreenObserver extracted compact semantic UI tree (32 elements parsed)`);
-            await new Promise(r => setTimeout(r, 400));
+            log('OBSERVE', `ScreenObserver extracted active UI hierarchy (32 nodes, 0KB cloud bandwidth)`);
+            await new Promise(r => setTimeout(r, 350));
 
-            // 4. PLAN & SAFETY
-            setPipelineStage('plan');
             const cmd = command.toLowerCase();
 
-            if (cmd.includes('whatsapp')) {
-                log('PLAN', `Structured Action: {"action": "OPEN_APP", "package": "com.whatsapp"}`);
-                setPipelineStage('act');
-                triggerRipple(60, 80);
-                highlightBox(20, 40, 70, 70, 'com.whatsapp:icon');
-                await new Promise(r => setTimeout(r, 500));
-                showApp('whatsapp');
-                log('ACTION', `Dispatched Accessibility Service launch: com.whatsapp`);
+            // Check Safety Gate triggers
+            if (cmd.includes('send') && (cmd.includes('500') || cmd.includes('rupee') || cmd.includes('money') || cmd.includes('pay') || cmd.includes('payment') || cmd.includes('delete'))) {
+                setPipelineStage('plan');
+                log('PLAN', `Action classified as high-risk: PAYMENT / SENSITIVE_TRANSACTION`);
+                setPipelineStage('safety');
+                log('SAFETY', `🛑 SAFETY GATE INTERCEPTED: Action requires explicit user confirmation!`);
 
-                setPipelineStage('verify');
-                log('VERIFY', `VerificationEngine confirmed: WhatsApp is foreground (PASSED)`);
-                log('DONE', `Response: "Done — Opened WhatsApp"`);
+                document.getElementById('modal-desc').innerHTML = `Action: <strong>${command.toUpperCase()}</strong><br>NEXUS requires explicit user authorization before executing financial or message transmissions.`;
+                document.getElementById('phone-modal').style.display = 'flex';
+
+                safetyCallback = (approved) => {
+                    if (approved) {
+                        setPipelineStage('act');
+                        log('SAFETY', `User authorized action. Dispatched transaction.`);
+                        setPipelineStage('verify');
+                        log('DONE', `Response: "Payment transaction completed successfully."`);
+                    } else {
+                        log('SAFETY', `User denied action. Execution terminated.`);
+                        log('DONE', `Response: "Operation cancelled for security."`);
+                    }
+                };
+                return;
             }
-            else if (cmd.includes('unread') || cmd.includes('messages')) {
-                showApp('whatsapp');
-                highlightBox(15, 80, 350, 70, 'id:conversations_row_mom');
-                log('PLAN', `Structured Action: {"action": "READ_VISIBLE_TEXT", "target": "unread_chats"}`);
-                setPipelineStage('act');
-                await new Promise(r => setTimeout(r, 500));
-                setPipelineStage('verify');
-                log('VERIFY', `Parsed 2 unread conversations: [Mom: 1 unread, John: 2 unread]`);
-                log('DONE', `Response: "You have unread messages from Mom ('Call me when you reach Pune') and John"`);
+
+            // 4. PLAN & ACT
+            setPipelineStage('plan');
+
+            if (cmd.includes('whatsapp') || cmd.includes('whats app') || cmd.includes('chat')) {
+                if (cmd.includes('unread') || cmd.includes('check') || cmd.includes('read')) {
+                    showApp('whatsapp');
+                    log('PLAN', `Structured Action: {"action": "READ_VISIBLE_TEXT", "target": "unread_messages"}`);
+                    setPipelineStage('act');
+                    highlightBox(15, 80, 350, 70, 'res-id:conversations_row_mom');
+                    await new Promise(r => setTimeout(r, 500));
+                    setPipelineStage('verify');
+                    log('VERIFY', `VerificationEngine parsed: 2 unread conversations [Mom, John]`);
+                    log('DONE', `Response: "Found 2 unread chats: Mom says 'Call me when you reach Pune', John sent Pune Metro update."`);
+                } else {
+                    log('PLAN', `Structured Action: {"action": "OPEN_APP", "package": "com.whatsapp"}`);
+                    setPipelineStage('act');
+                    triggerRipple(60, 80);
+                    highlightBox(20, 40, 70, 70, 'com.whatsapp:icon');
+                    await new Promise(r => setTimeout(r, 450));
+                    showApp('whatsapp');
+                    log('ACTION', `Dispatched Accessibility Service launch: com.whatsapp`);
+
+                    setPipelineStage('verify');
+                    log('VERIFY', `VerificationEngine confirmed: com.whatsapp is foreground (PASSED)`);
+                    log('DONE', `Response: "Done — Opened WhatsApp"`);
+                }
             }
-            else if (cmd.includes('chrome') || cmd.includes('pune metro')) {
+            else if (cmd.includes('chrome') || cmd.includes('browser') || cmd.includes('pune') || cmd.includes('metro') || cmd.includes('search')) {
                 log('PLAN', `Structured Action: {"action": "OPEN_APP", "package": "com.android.chrome", "sub_action": "TYPE_TEXT"}`);
                 setPipelineStage('act');
                 triggerRipple(220, 80);
                 await new Promise(r => setTimeout(r, 400));
                 showApp('chrome');
                 highlightBox(10, 40, 360, 45, 'id:url_bar');
-                log('ACTION', `Dispatched input text: 'Pune Metro timings' into search box`);
+                log('ACTION', `Typed query into Chrome search bar: "Pune Metro timings"`);
 
                 setPipelineStage('verify');
-                log('VERIFY', `Verified: Chrome search query loaded`);
-                log('DONE', `Response: "Done — Pune Metro runs 06:00 AM to 10:00 PM every 7–10 mins"`);
+                log('VERIFY', `Verified: Chrome search query loaded with live timetable results`);
+                log('DONE', `Response: "Done — Pune Metro operates 06:00 AM to 10:00 PM every 7–10 mins"`);
             }
-            else if (cmd.includes('gmail')) {
+            else if (cmd.includes('gmail') || cmd.includes('email') || cmd.includes('mail')) {
                 log('PLAN', `Structured Action: {"action": "OPEN_APP", "package": "com.google.android.gm"}`);
                 setPipelineStage('act');
                 triggerRipple(140, 80);
                 await new Promise(r => setTimeout(r, 400));
                 showApp('gmail');
-                log('ACTION', `Dispatched launch: com.google.android.gm`);
+                highlightBox(15, 75, 350, 65, 'id:mail_item_irctc');
+                log('ACTION', `Dispatched launch: com.google.android.gm (Gmail)`);
 
                 setPipelineStage('verify');
-                log('VERIFY', `Verified: Gmail conversation list rendered`);
-                log('DONE', `Response: "Done — Opened Gmail. Latest: IRCTC Ticket & Snapdragon Toolkit"`);
+                log('VERIFY', `Verified: Gmail conversation list rendered with 3 unread emails`);
+                log('DONE', `Response: "Done — Opened Gmail. Latest: IRCTC Train Ticket & Snapdragon Toolkit"`);
             }
-            else if (cmd.includes('back')) {
+            else if (cmd.includes('back') || cmd.includes('home')) {
                 log('PLAN', `Structured Action: {"action": "BACK", "code": 4}`);
                 setPipelineStage('act');
                 showApp('home');
@@ -1241,71 +1440,55 @@
                 log('VERIFY', `Verified: Navigated back to Home Screen`);
                 log('DONE', `Response: "Done — Navigated back"`);
             }
-            else if (cmd.includes('screenshot')) {
+            else if (cmd.includes('screenshot') || cmd.includes('capture')) {
                 log('PLAN', `Structured Action: {"action": "TAKE_SCREENSHOT"}`);
                 setPipelineStage('act');
-                log('ACTION', `Captured raw screen buffer via ScreenCaptureManager (1080x2400)`);
+                log('ACTION', `Captured screen frame via ScreenCaptureManager (1080x2400)`);
                 setPipelineStage('verify');
-                log('VERIFY', `Verified: Frame saved to artifacts`);
+                log('VERIFY', `Frame buffer verified and saved to artifacts`);
                 log('DONE', `Response: "Done — Screenshot captured"`);
             }
-            else if (cmd.includes('what') && cmd.includes('screen')) {
+            else if (cmd.includes('what') || cmd.includes('screen') || cmd.includes('describe')) {
                 log('PLAN', `Structured Action: {"action": "DESCRIBE_SCREEN"}`);
                 setPipelineStage('act');
                 setPipelineStage('verify');
-                log('VERIFY', `Synthesized visual and accessibility elements`);
-                log('DONE', `Response: "On screen: Active Android interface with 3 main apps visible"`);
+                log('VERIFY', `Synthesized visual and accessibility element tree`);
+                log('DONE', `Response: "On screen: Android mobile interface with active apps and notifications visible"`);
+            }
+            else {
+                // Generic handler for custom spoken phrases
+                log('PLAN', `Structured Action: {"action": "EXECUTE_NATURAL_COMMAND", "query": "${command}"}`);
+                setPipelineStage('act');
+                await new Promise(r => setTimeout(r, 400));
+                setPipelineStage('verify');
+                log('VERIFY', `Closed-loop verification confirmed task resolution`);
+                log('DONE', `Response: "Processed on-device: '${command}'"`);
             }
         }
 
         async function triggerSafetyDemo() {
-            log('HEAR', `User spoke: "Send ₹500 to John"`);
-            setPipelineStage('hear');
-            await new Promise(r => setTimeout(r, 400));
-
-            setPipelineStage('plan');
-            log('PLAN', `Identified high-risk action: PAYMENT`);
-
-            setPipelineStage('safety');
-            log('SAFETY', `🛑 SAFETY GATE INTERCEPTED: Action 'PAYMENT' requires explicit user confirmation!`);
-
-            document.getElementById('modal-desc').innerHTML = `Action: <strong>PAYMENT (₹500 to John)</strong><br>NEXUS requires your explicit confirmation before proceeding.`;
-            document.getElementById('phone-modal').style.display = 'flex';
-
-            safetyCallback = (approved) => {
-                if (approved) {
-                    log('SAFETY', `User approved action. Dispatched transaction.`);
-                    log('DONE', `Response: "Payment confirmed."`);
-                } else {
-                    log('SAFETY', `User denied action. Operation cancelled.`);
-                    log('DONE', `Response: "Payment cancelled for safety."`);
-                }
-            };
+            processSpokenCommand('Send ₹500 to John');
         }
 
         async function playAutoPresentation() {
             log('INIT', `Starting automated 6-step NEXUS Video Demo sequence...`);
-            await triggerDemo('Open WhatsApp');
+            await processSpokenCommand('Open WhatsApp');
             await new Promise(r => setTimeout(r, 2200));
 
-            await triggerDemo('Check unread messages');
+            await processSpokenCommand('Check unread messages');
             await new Promise(r => setTimeout(r, 2200));
 
-            await triggerDemo('Open Chrome and search for Pune Metro');
+            await processSpokenCommand('Open Chrome and search for Pune Metro');
             await new Promise(r => setTimeout(r, 2200));
 
-            await triggerDemo('What is currently on my screen?');
+            await processSpokenCommand('What is currently on my screen?');
             await new Promise(r => setTimeout(r, 2000));
 
-            await triggerDemo('Go back');
+            await processSpokenCommand('Go back');
             await new Promise(r => setTimeout(r, 1500));
 
-            await triggerDemo('Take a screenshot');
+            await processSpokenCommand('Take a screenshot');
             log('DONE', `✔ Video Presentation sequence complete!`);
-        }
-
-        function togglePushToTalk() {
-            triggerDemo('Open WhatsApp');
         }
     </script>
 </body>
