@@ -124,3 +124,10 @@ def screen():
 
 if __name__ == "__main__":
     main()
+
+@main.command()
+@click.option("--port", "-p", default=8088, help="Port to serve web simulator on")
+def web(port: int):
+    """Launch interactive browser-based simulator for video presentations."""
+    from scripts.start_web_demo import start_server
+    start_server()

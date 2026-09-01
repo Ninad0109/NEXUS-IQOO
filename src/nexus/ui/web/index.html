@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS — iQOO On-Device AI Agent Interactive Simulator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #080B10;
+            --card-bg: #0F141C;
+            --card-border: #1E293B;
+            --accent-cyan: #00F0FF;
+            --accent-emerald: #10B981;
+            --accent-purple: #8B5CF6;
+            --accent-amber: #F59E0B;
+            --accent-rose: #F43F5E;
+            --text-main: #F8FAFC;
+            --text-dim: #94A3B8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Top Navigation Bar */
+        header {
+            background: rgba(15, 20, 28, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-badge {
+            background: linear-gradient(135deg, #00F0FF, #3B82F6);
+            color: #000;
+            font-weight: 900;
+            font-size: 16px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            letter-spacing: 1px;
+        }
+
+        .brand-title {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-subtitle {
+            font-size: 13px;
+            color: var(--text-dim);
+            font-weight: 400;
+        }
+
+        .header-badges {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .badge {
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-local {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34D399;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .badge-local .dot {
+            width: 7px;
+            height: 7px;
+            background: #10B981;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #10B981;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.8); }
+        }
+
+        .badge-snapdragon {
+            background: rgba(245, 158, 11, 0.15);
+            color: #FBBF24;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+
+        /* Main Workspace Container */
+        .workspace {
+            display: grid;
+            grid-template-columns: 420px 1fr 340px;
+            gap: 24px;
+            padding: 24px 28px;
+            flex: 1;
+            max-width: 1750px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* LEFT: Phone Simulator Frame */
+        .phone-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .phone-frame {
+            width: 380px;
+            height: 780px;
+            background: #000;
+            border-radius: 46px;
+            border: 4px solid #334155;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 240, 255, 0.15);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .phone-punchhole {
+            width: 12px;
+            height: 12px;
+            background: #000;
+            border: 2px solid #1E293B;
+            border-radius: 50%;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+        }
+
+        .phone-status-bar {
+            height: 32px;
+            padding: 6px 20px 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: #CBD5E1;
+            z-index: 40;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .phone-screen-content {
+            flex: 1;
+            background: #121824;
+            position: relative;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Visual Tap Indicator */
+        .tap-ripple {
+            position: absolute;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(0, 240, 255, 0.4);
+            border: 2px solid #00F0FF;
+            pointer-events: none;
+            transform: translate(-50%, -50%) scale(0);
+            animation: rippleAnim 0.6s ease-out forwards;
+            z-index: 100;
+            display: none;
+        }
+
+        @keyframes rippleAnim {
+            0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+        }
+
+        /* Semantic Element Bounding Box Highlight */
+        .semantic-box {
+            position: absolute;
+            border: 2px dashed #00F0FF;
+            background: rgba(0, 240, 255, 0.15);
+            border-radius: 6px;
+            pointer-events: none;
+            z-index: 30;
+            transition: all 0.3s ease;
+            display: none;
+        }
+
+        .semantic-label {
+            position: absolute;
+            top: -16px;
+            left: 0;
+            background: #00F0FF;
+            color: #000;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* App Screens */
+        .app-view {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .app-view.active {
+            display: flex;
+        }
+
+        /* WhatsApp Screen */
+        .wa-header {
+            background: #075E54;
+            padding: 14px 16px 8px 16px;
+            color: #FFF;
+        }
+
+        .wa-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .wa-title {
+            font-size: 19px;
+            font-weight: 700;
+        }
+
+        .wa-tabs {
+            display: flex;
+            border-bottom: 2px solid transparent;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .wa-tab {
+            flex: 1;
+            text-align: center;
+            padding: 6px 0;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .wa-tab.active {
+            color: #FFF;
+            border-bottom: 3px solid #25D366;
+        }
+
+        .wa-chat-list {
+            flex: 1;
+            background: #111B21;
+            overflow-y: auto;
+        }
+
+        .wa-chat-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .wa-chat-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .wa-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #2A3942;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            margin-right: 14px;
+            flex-shrink: 0;
+        }
+
+        .wa-chat-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .wa-chat-top {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .wa-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #E9EDEF;
+        }
+
+        .wa-time {
+            font-size: 11px;
+            color: #8696A0;
+        }
+
+        .wa-msg {
+            font-size: 13px;
+            color: #8696A0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .wa-unread-badge {
+            background: #25D366;
+            color: #000;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+
+        /* Chrome Screen */
+        .chrome-header {
+            background: #1F2937;
+            padding: 10px 14px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .chrome-search-bar {
+            background: #374151;
+            border-radius: 20px;
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #F3F4F6;
+        }
+
+        .chrome-results {
+            flex: 1;
+            background: #111827;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .search-card {
+            background: #1F2937;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+            border: 1px solid #374151;
+        }
+
+        .search-card-title {
+            color: #60A5FA;
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .search-card-desc {
+            font-size: 12px;
+            color: #9CA3AF;
+            line-height: 1.4;
+        }
+
+        /* Gmail Screen */
+        .gmail-header {
+            background: #1E293B;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .gmail-search {
+            flex: 1;
+            background: #0F172A;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 13px;
+            color: #94A3B8;
+        }
+
+        .mail-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background: #0F172A;
+        }
+
+        .mail-sender {
+            font-size: 14px;
+            font-weight: 700;
+            color: #F8FAFC;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .mail-subject {
+            font-size: 13px;
+            font-weight: 600;
+            color: #E2E8F0;
+            margin: 2px 0;
+        }
+
+        .mail-snippet {
+            font-size: 12px;
+            color: #64748B;
+        }
+
+        /* Home Screen */
+        .home-grid {
+            padding: 30px 20px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .home-app-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .icon-box {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .home-app-label {
+            font-size: 11px;
+            color: #E2E8F0;
+            font-weight: 500;
+        }
+
+        /* Safety Modal Overlay inside Phone */
+        .phone-modal {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 80;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .phone-modal-box {
+            background: #1E293B;
+            border: 1px solid #F43F5E;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .phone-modal-title {
+            color: #F43F5E;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .phone-modal-body {
+            font-size: 13px;
+            color: #CBD5E1;
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+
+        .phone-modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-modal-cancel {
+            flex: 1;
+            background: #334155;
+            color: #FFF;
+            border: none;
+            padding: 8px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-modal-confirm {
+            flex: 1;
+            background: #F43F5E;
+            color: #FFF;
+            border: none;
+            padding: 8px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* MIDDLE: NEXUS Agent AI HUD & Live Execution Timeline */
+        .hud-container {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Pipeline Visualizer Steps */
+        .pipeline-flow {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .flow-step {
+            background: #131B26;
+            border: 1px solid #1E293B;
+            border-radius: 8px;
+            padding: 8px 6px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .flow-step.active {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 240, 255, 0.12);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .flow-step.passed {
+            border-color: var(--accent-emerald);
+            background: rgba(16, 185, 129, 0.12);
+        }
+
+        .step-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-family: 'Fira Code', monospace;
+            color: var(--text-dim);
+        }
+
+        .flow-step.active .step-label {
+            color: var(--accent-cyan);
+        }
+
+        .flow-step.passed .step-label {
+            color: var(--accent-emerald);
+        }
+
+        /* Voice Waveform Area */
+        .voice-box {
+            background: #0A0E17;
+            border: 1px solid #1E293B;
+            border-radius: 12px;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .mic-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00F0FF, #3B82F6);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #000;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+
+        .mic-btn.listening {
+            animation: pulse-mic 1s infinite alternate;
+            background: #F43F5E;
+            box-shadow: 0 0 20px #F43F5E;
+        }
+
+        @keyframes pulse-mic {
+            from { transform: scale(1); }
+            to { transform: scale(1.15); }
+        }
+
+        .voice-text-area {
+            flex: 1;
+        }
+
+        .voice-prompt-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            font-family: 'Fira Code', monospace;
+            margin-bottom: 4px;
+        }
+
+        .voice-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: #FFF;
+        }
+
+        .waveform {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            height: 24px;
+        }
+
+        .wave-bar {
+            width: 3px;
+            height: 6px;
+            background: #00F0FF;
+            border-radius: 2px;
+            transition: height 0.1s;
+        }
+
+        .listening .wave-bar {
+            animation: waveAnim 0.5s infinite ease-in-out alternate;
+        }
+
+        @keyframes waveAnim {
+            0% { height: 4px; }
+            100% { height: 22px; }
+        }
+
+        /* Live Terminal Logs */
+        .terminal-box {
+            background: #06090E;
+            border: 1px solid #1E293B;
+            border-radius: 12px;
+            padding: 16px;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            height: 340px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 6px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .log-tag {
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+        }
+
+        .tag-hear { background: rgba(139, 92, 246, 0.2); color: #C084FC; }
+        .tag-observe { background: rgba(59, 130, 246, 0.2); color: #60A5FA; }
+        .tag-plan { background: rgba(0, 240, 255, 0.2); color: #00F0FF; }
+        .tag-action { background: rgba(16, 185, 129, 0.2); color: #34D399; }
+        .tag-verify { background: rgba(245, 158, 11, 0.2); color: #FBBF24; }
+        .tag-safety { background: rgba(244, 63, 94, 0.2); color: #FB7185; }
+        .tag-done { background: rgba(16, 185, 129, 0.3); color: #4ADE80; font-weight: 800; }
+
+        .log-msg {
+            color: #E2E8F0;
+            flex: 1;
+        }
+
+        /* RIGHT: Demo Controls & Telemetry */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .demo-btn-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .demo-btn {
+            background: #131B26;
+            border: 1px solid var(--card-border);
+            color: #E2E8F0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s;
+        }
+
+        .demo-btn:hover {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 240, 255, 0.08);
+            transform: translateX(4px);
+        }
+
+        .demo-btn.btn-primary-demo {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(59, 130, 246, 0.2));
+            border-color: var(--accent-cyan);
+            color: #00F0FF;
+            font-weight: 700;
+        }
+
+        .telemetry-card {
+            font-size: 12px;
+        }
+
+        .telemetry-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .telemetry-label {
+            color: var(--text-dim);
+        }
+
+        .telemetry-val {
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+            color: #FFF;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <div class="logo-badge">NEXUS</div>
+            <div>
+                <div class="brand-title">iQOO On-Device Phone AI Agent</div>
+                <div class="brand-subtitle">Snapdragon NPU Semantic Computer-Use Prototype</div>
+            </div>
+        </div>
+        <div class="header-badges">
+            <div class="badge badge-local">
+                <div class="dot"></div>
+                <span id="model-badge">LOCAL AI: Snapdragon NPU (Hexagon)</span>
+            </div>
+            <div class="badge badge-snapdragon">Snapdragon 8 Gen 3</div>
+        </div>
+    </header>
+
+    <div class="workspace">
+
+        <!-- LEFT: Phone Simulation Frame -->
+        <div class="phone-container">
+            <div class="phone-frame">
+                <div class="phone-punchhole"></div>
+                <div class="phone-status-bar">
+                    <span>23:45</span>
+                    <span>5G • 100% 🔋</span>
+                </div>
+
+                <div class="phone-screen-content" id="phone-screen">
+                    <div class="tap-ripple" id="tap-ripple"></div>
+                    <div class="semantic-box" id="semantic-box">
+                        <div class="semantic-label" id="semantic-label">NODE: 0x4A</div>
+                    </div>
+
+                    <!-- 1. Home Screen -->
+                    <div class="app-view active" id="view-home">
+                        <div class="home-grid">
+                            <div class="home-app-icon" onclick="triggerDemo('Open WhatsApp')">
+                                <div class="icon-box" style="background: #25D366; color:#FFF;">💬</div>
+                                <span class="home-app-label">WhatsApp</span>
+                            </div>
+                            <div class="home-app-icon" onclick="triggerDemo('Open Gmail')">
+                                <div class="icon-box" style="background: #EA4335; color:#FFF;">✉️</div>
+                                <span class="home-app-label">Gmail</span>
+                            </div>
+                            <div class="home-app-icon" onclick="triggerDemo('Open Chrome and search for Pune Metro')">
+                                <div class="icon-box" style="background: #4285F4; color:#FFF;">🌐</div>
+                                <span class="home-app-label">Chrome</span>
+                            </div>
+                            <div class="home-app-icon" onclick="triggerDemo('Settings')">
+                                <div class="icon-box" style="background: #64748B; color:#FFF;">⚙️</div>
+                                <span class="home-app-label">Settings</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. WhatsApp Screen -->
+                    <div class="app-view" id="view-whatsapp">
+                        <div class="wa-header">
+                            <div class="wa-title-row">
+                                <div class="wa-title">WhatsApp</div>
+                                <div style="display:flex; gap:14px; font-size:16px;">🔍 ⚙️</div>
+                            </div>
+                            <div class="wa-tabs">
+                                <div class="wa-tab active">Chats</div>
+                                <div class="wa-tab">Updates</div>
+                                <div class="wa-tab">Calls</div>
+                            </div>
+                        </div>
+                        <div class="wa-chat-list">
+                            <div class="wa-chat-item" id="chat-mom">
+                                <div class="wa-avatar">👩</div>
+                                <div class="wa-chat-info">
+                                    <div class="wa-chat-top">
+                                        <span class="wa-name">Mom</span>
+                                        <span class="wa-time" style="color:#25D366;">23:42</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        <span class="wa-msg">Call me when you reach Pune!</span>
+                                        <span class="wa-unread-badge">1</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="wa-chat-item" id="chat-john">
+                                <div class="wa-avatar">👨</div>
+                                <div class="wa-chat-info">
+                                    <div class="wa-chat-top">
+                                        <span class="wa-name">John</span>
+                                        <span class="wa-time" style="color:#25D366;">23:15</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        <span class="wa-msg">Pune Metro timings check done</span>
+                                        <span class="wa-unread-badge">2</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="wa-chat-item">
+                                <div class="wa-avatar">👥</div>
+                                <div class="wa-chat-info">
+                                    <div class="wa-chat-top">
+                                        <span class="wa-name">Hackathon Team NEXUS</span>
+                                        <span class="wa-time">22:50</span>
+                                    </div>
+                                    <span class="wa-msg">Prototype is looking awesome!</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Chrome Screen -->
+                    <div class="app-view" id="view-chrome">
+                        <div class="chrome-header">
+                            <div class="chrome-search-bar" id="chrome-bar">
+                                <span>🔒</span>
+                                <span id="chrome-query-text">https://google.com/search?q=pune+metro</span>
+                            </div>
+                        </div>
+                        <div class="chrome-results">
+                            <div class="search-card">
+                                <div class="search-card-title">Pune Metro Rail Project — Timings & Routes</div>
+                                <div class="search-card-desc">Metro trains operate daily from 06:00 AM to 10:00 PM with frequency of 7–10 minutes across Line 1 (PCMC - Swargate) & Line 2 (Vanaz - Ramwadi).</div>
+                            </div>
+                            <div class="search-card">
+                                <div class="search-card-title">Official Pune Metro Timetable 2026</div>
+                                <div class="search-card-desc">First train: 06:00 hrs | Last train: 22:00 hrs. Live ticket bookings and station maps available.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Gmail Screen -->
+                    <div class="app-view" id="view-gmail">
+                        <div class="gmail-header">
+                            <div class="gmail-search">🔍 Search in emails</div>
+                            <div>👤</div>
+                        </div>
+                        <div style="padding:10px 16px; font-size:12px; font-weight:700; color:#94A3B8;">PRIMARY INBOX (3 unread)</div>
+                        <div class="mail-item">
+                            <div class="mail-sender"><span>IRCTC Ticket Confirmation</span><span style="color:#38BDF8; font-size:11px;">22:30</span></div>
+                            <div class="mail-subject">Train Ticket: Pune Jn to Mumbai CST</div>
+                            <div class="mail-snippet">PNR: 8421902144 | Departure: 07:15 AM | Coach: B3</div>
+                        </div>
+                        <div class="mail-item">
+                            <div class="mail-sender"><span>iQOO Dev Ecosystem</span><span style="color:#38BDF8; font-size:11px;">20:10</span></div>
+                            <div class="mail-subject">Snapdragon NPU Acceleration Toolkit</div>
+                            <div class="mail-snippet">Your Qualcomm QNN runtime license is active for on-device inference.</div>
+                        </div>
+                    </div>
+
+                    <!-- Safety Modal inside phone screen -->
+                    <div class="phone-modal" id="phone-modal">
+                        <div class="phone-modal-box">
+                            <div class="phone-modal-title">🛑 NEXUS SAFETY GATE</div>
+                            <div class="phone-modal-body" id="modal-desc">
+                                Action requires confirmation:<br>
+                                <strong>SEND PAYMENT / MESSAGE</strong>
+                            </div>
+                            <div class="phone-modal-actions">
+                                <button class="btn-modal-cancel" onclick="resolveSafety(false)">Deny</button>
+                                <button class="btn-modal-confirm" onclick="resolveSafety(true)">Approve</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- MIDDLE: AI Brain HUD & Execution Trace -->
+        <div class="hud-container">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">⚡ NEXUS Execution Loop State</div>
+                    <span style="font-size:12px; color:var(--text-dim); font-family:'Fira Code', monospace;" id="loop-latency">Latency: 28ms</span>
+                </div>
+
+                <!-- Pipeline Stages -->
+                <div class="pipeline-flow">
+                    <div class="flow-step" id="step-hear"><div class="step-label">1. Hear</div></div>
+                    <div class="flow-step" id="step-understand"><div class="step-label">2. Understand</div></div>
+                    <div class="flow-step" id="step-observe"><div class="step-label">3. Observe</div></div>
+                    <div class="flow-step" id="step-plan"><div class="step-label">4. Plan</div></div>
+                    <div class="flow-step" id="step-safety"><div class="step-label">5. Safety</div></div>
+                    <div class="flow-step" id="step-act"><div class="step-label">6. Act</div></div>
+                    <div class="flow-step" id="step-verify"><div class="step-label">7. Verify</div></div>
+                </div>
+
+                <!-- Push to Talk Mic & Speech -->
+                <div class="voice-box" id="voice-box">
+                    <button class="mic-btn" id="mic-btn" onclick="togglePushToTalk()">🎤</button>
+                    <div class="voice-text-area">
+                        <div class="voice-prompt-label">Push-to-Talk Command:</div>
+                        <div class="voice-text" id="voice-text">"Press Mic or click a Demo"</div>
+                    </div>
+                    <div class="waveform" id="waveform">
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                    </div>
+                </div>
+
+                <!-- Live Terminal Log -->
+                <div class="terminal-box" id="terminal-log">
+                    <div class="log-entry"><span class="log-tag tag-done">INIT</span><span class="log-msg">NEXUS on-device core loaded (Snapdragon NPU Hexagon)</span></div>
+                    <div class="log-entry"><span class="log-tag tag-observe">READY</span><span class="log-msg">Android Accessibility driver connected (Zero-latency bridge)</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Interactive Demos & Telemetry -->
+        <div class="sidebar">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">🎬 Presentation Demos</div>
+                </div>
+                <div class="demo-btn-list">
+                    <button class="demo-btn btn-primary-demo" onclick="playAutoPresentation()">
+                        <span>▶ Auto-Play Video Demo</span>
+                        <span>⚡</span>
+                    </button>
+                    <button class="demo-btn" onclick="triggerDemo('Open WhatsApp')">
+                        <span>Demo 1: Open WhatsApp</span>
+                        <span>💬</span>
+                    </button>
+                    <button class="demo-btn" onclick="triggerDemo('Check unread messages')">
+                        <span>Demo 2: Check Unread Messages</span>
+                        <span>📩</span>
+                    </button>
+                    <button class="demo-btn" onclick="triggerDemo('Open Chrome and search for Pune Metro')">
+                        <span>Demo 3: Search Pune Metro</span>
+                        <span>🌐</span>
+                    </button>
+                    <button class="demo-btn" onclick="triggerDemo('What is currently on my screen?')">
+                        <span>Demo 4: What is on screen?</span>
+                        <span>👁️</span>
+                    </button>
+                    <button class="demo-btn" onclick="triggerDemo('Open Gmail and show me my latest emails')">
+                        <span>Demo 5: Open Gmail</span>
+                        <span>✉️</span>
+                    </button>
+                    <button class="demo-btn" onclick="triggerDemo('Go back')">
+                        <span>Demo 6: Go back</span>
+                        <span>↩️</span>
+                    </button>
+                    <button class="demo-btn" onclick="triggerDemo('Take a screenshot')">
+                        <span>Demo 7: Screenshot</span>
+                        <span>📸</span>
+                    </button>
+                    <button class="demo-btn" style="border-color:#F43F5E; color:#FB7185;" onclick="triggerSafetyDemo()">
+                        <span>Safety Test: Send Payment</span>
+                        <span>🛡️</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="card telemetry-card">
+                <div class="card-header">
+                    <div class="card-title">📊 Live On-Device Telemetry</div>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Inference Engine:</span>
+                    <span class="telemetry-val" style="color:#10B981;">Snapdragon NPU</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Screen Tree Extraction:</span>
+                    <span class="telemetry-val">12 ms</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Semantic Priority:</span>
+                    <span class="telemetry-val" style="color:#00F0FF;">Tier 1: Node Tree</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Bandwidth to Cloud:</span>
+                    <span class="telemetry-val" style="color:#34D399;">0 KB (100% Local)</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Verification Mode:</span>
+                    <span class="telemetry-val">Closed-Loop UI State</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function log(stage, msg) {
+            const term = document.getElementById('terminal-log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            const tagClass = 'tag-' + stage.toLowerCase();
+            entry.innerHTML = `<span class="log-tag ${tagClass}">${stage}</span><span class="log-msg">${msg}</span>`;
+            term.appendChild(entry);
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function setPipelineStage(activeStage) {
+            const stages = ['hear', 'understand', 'observe', 'plan', 'safety', 'act', 'verify'];
+            let passed = true;
+            stages.forEach(s => {
+                const el = document.getElementById('step-' + s);
+                if (s === activeStage) {
+                    el.className = 'flow-step active';
+                    passed = false;
+                } else if (passed) {
+                    el.className = 'flow-step passed';
+                } else {
+                    el.className = 'flow-step';
+                }
+            });
+        }
+
+        function showApp(appId) {
+            document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+            const target = document.getElementById('view-' + appId);
+            if (target) target.classList.add('active');
+        }
+
+        function triggerRipple(x, y) {
+            const r = document.getElementById('tap-ripple');
+            r.style.left = x + 'px';
+            r.style.top = y + 'px';
+            r.style.display = 'block';
+            setTimeout(() => { r.style.display = 'none'; }, 600);
+        }
+
+        function highlightBox(x, y, w, h, label) {
+            const box = document.getElementById('semantic-box');
+            const lbl = document.getElementById('semantic-label');
+            box.style.left = x + 'px';
+            box.style.top = y + 'px';
+            box.style.width = w + 'px';
+            box.style.height = h + 'px';
+            lbl.innerText = label;
+            box.style.display = 'block';
+            setTimeout(() => { box.style.display = 'none'; }, 1500);
+        }
+
+        let isSafetyResolving = false;
+        let safetyCallback = null;
+
+        function resolveSafety(approved) {
+            document.getElementById('phone-modal').style.display = 'none';
+            if (safetyCallback) safetyCallback(approved);
+        }
+
+        async function triggerDemo(command) {
+            const voiceText = document.getElementById('voice-text');
+            const micBtn = document.getElementById('mic-btn');
+            const voiceBox = document.getElementById('voice-box');
+
+            // 1. HEAR
+            micBtn.classList.add('listening');
+            voiceBox.classList.add('listening');
+            voiceText.innerText = `"${command}"`;
+            setPipelineStage('hear');
+            log('HEAR', `User spoke: "${command}" (Local STT transcribed in 18ms)`);
+
+            await new Promise(r => setTimeout(r, 600));
+            micBtn.classList.remove('listening');
+            voiceBox.classList.remove('listening');
+
+            // 2. UNDERSTAND
+            setPipelineStage('understand');
+            log('PLAN', `Interpreting intent via Snapdragon NPU...`);
+            await new Promise(r => setTimeout(r, 400));
+
+            // 3. OBSERVE
+            setPipelineStage('observe');
+            log('OBSERVE', `ScreenObserver extracted compact semantic UI tree (32 elements parsed)`);
+            await new Promise(r => setTimeout(r, 400));
+
+            // 4. PLAN & SAFETY
+            setPipelineStage('plan');
+            const cmd = command.toLowerCase();
+
+            if (cmd.includes('whatsapp')) {
+                log('PLAN', `Structured Action: {"action": "OPEN_APP", "package": "com.whatsapp"}`);
+                setPipelineStage('act');
+                triggerRipple(60, 80);
+                highlightBox(20, 40, 70, 70, 'com.whatsapp:icon');
+                await new Promise(r => setTimeout(r, 500));
+                showApp('whatsapp');
+                log('ACTION', `Dispatched Accessibility Service launch: com.whatsapp`);
+
+                setPipelineStage('verify');
+                log('VERIFY', `VerificationEngine confirmed: WhatsApp is foreground (PASSED)`);
+                log('DONE', `Response: "Done — Opened WhatsApp"`);
+            }
+            else if (cmd.includes('unread') || cmd.includes('messages')) {
+                showApp('whatsapp');
+                highlightBox(15, 80, 350, 70, 'id:conversations_row_mom');
+                log('PLAN', `Structured Action: {"action": "READ_VISIBLE_TEXT", "target": "unread_chats"}`);
+                setPipelineStage('act');
+                await new Promise(r => setTimeout(r, 500));
+                setPipelineStage('verify');
+                log('VERIFY', `Parsed 2 unread conversations: [Mom: 1 unread, John: 2 unread]`);
+                log('DONE', `Response: "You have unread messages from Mom ('Call me when you reach Pune') and John"`);
+            }
+            else if (cmd.includes('chrome') || cmd.includes('pune metro')) {
+                log('PLAN', `Structured Action: {"action": "OPEN_APP", "package": "com.android.chrome", "sub_action": "TYPE_TEXT"}`);
+                setPipelineStage('act');
+                triggerRipple(220, 80);
+                await new Promise(r => setTimeout(r, 400));
+                showApp('chrome');
+                highlightBox(10, 40, 360, 45, 'id:url_bar');
+                log('ACTION', `Dispatched input text: 'Pune Metro timings' into search box`);
+
+                setPipelineStage('verify');
+                log('VERIFY', `Verified: Chrome search query loaded`);
+                log('DONE', `Response: "Done — Pune Metro runs 06:00 AM to 10:00 PM every 7–10 mins"`);
+            }
+            else if (cmd.includes('gmail')) {
+                log('PLAN', `Structured Action: {"action": "OPEN_APP", "package": "com.google.android.gm"}`);
+                setPipelineStage('act');
+                triggerRipple(140, 80);
+                await new Promise(r => setTimeout(r, 400));
+                showApp('gmail');
+                log('ACTION', `Dispatched launch: com.google.android.gm`);
+
+                setPipelineStage('verify');
+                log('VERIFY', `Verified: Gmail conversation list rendered`);
+                log('DONE', `Response: "Done — Opened Gmail. Latest: IRCTC Ticket & Snapdragon Toolkit"`);
+            }
+            else if (cmd.includes('back')) {
+                log('PLAN', `Structured Action: {"action": "BACK", "code": 4}`);
+                setPipelineStage('act');
+                showApp('home');
+                log('ACTION', `Dispatched Global Accessibility Action: GLOBAL_ACTION_BACK`);
+
+                setPipelineStage('verify');
+                log('VERIFY', `Verified: Navigated back to Home Screen`);
+                log('DONE', `Response: "Done — Navigated back"`);
+            }
+            else if (cmd.includes('screenshot')) {
+                log('PLAN', `Structured Action: {"action": "TAKE_SCREENSHOT"}`);
+                setPipelineStage('act');
+                log('ACTION', `Captured raw screen buffer via ScreenCaptureManager (1080x2400)`);
+                setPipelineStage('verify');
+                log('VERIFY', `Verified: Frame saved to artifacts`);
+                log('DONE', `Response: "Done — Screenshot captured"`);
+            }
+            else if (cmd.includes('what') && cmd.includes('screen')) {
+                log('PLAN', `Structured Action: {"action": "DESCRIBE_SCREEN"}`);
+                setPipelineStage('act');
+                setPipelineStage('verify');
+                log('VERIFY', `Synthesized visual and accessibility elements`);
+                log('DONE', `Response: "On screen: Active Android interface with 3 main apps visible"`);
+            }
+        }
+
+        async function triggerSafetyDemo() {
+            log('HEAR', `User spoke: "Send ₹500 to John"`);
+            setPipelineStage('hear');
+            await new Promise(r => setTimeout(r, 400));
+
+            setPipelineStage('plan');
+            log('PLAN', `Identified high-risk action: PAYMENT`);
+
+            setPipelineStage('safety');
+            log('SAFETY', `🛑 SAFETY GATE INTERCEPTED: Action 'PAYMENT' requires explicit user confirmation!`);
+
+            document.getElementById('modal-desc').innerHTML = `Action: <strong>PAYMENT (₹500 to John)</strong><br>NEXUS requires your explicit confirmation before proceeding.`;
+            document.getElementById('phone-modal').style.display = 'flex';
+
+            safetyCallback = (approved) => {
+                if (approved) {
+                    log('SAFETY', `User approved action. Dispatched transaction.`);
+                    log('DONE', `Response: "Payment confirmed."`);
+                } else {
+                    log('SAFETY', `User denied action. Operation cancelled.`);
+                    log('DONE', `Response: "Payment cancelled for safety."`);
+                }
+            };
+        }
+
+        async function playAutoPresentation() {
+            log('INIT', `Starting automated 6-step NEXUS Video Demo sequence...`);
+            await triggerDemo('Open WhatsApp');
+            await new Promise(r => setTimeout(r, 2200));
+
+            await triggerDemo('Check unread messages');
+            await new Promise(r => setTimeout(r, 2200));
+
+            await triggerDemo('Open Chrome and search for Pune Metro');
+            await new Promise(r => setTimeout(r, 2200));
+
+            await triggerDemo('What is currently on my screen?');
+            await new Promise(r => setTimeout(r, 2000));
+
+            await triggerDemo('Go back');
+            await new Promise(r => setTimeout(r, 1500));
+
+            await triggerDemo('Take a screenshot');
+            log('DONE', `✔ Video Presentation sequence complete!`);
+        }
+
+        function togglePushToTalk() {
+            triggerDemo('Open WhatsApp');
+        }
+    </script>
+</body>
+</html>
